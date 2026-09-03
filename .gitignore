@@ -1,0 +1,7 @@
+.env
+venv/
+__pycache__/
+*.pyc
+uploaded_*.pdf
+node_modules/
+dist/
