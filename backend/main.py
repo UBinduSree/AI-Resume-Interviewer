@@ -1,3 +1,5 @@
+from urllib import request
+
 from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,8 +8,7 @@ from document_processor import (
     split_text_into_chunks
 )
 from rag_pipeline import create_vector_store
-from llm import generate_interview_questions
-
+from llm import generate_interview_questions, answer_resume_question
 app = FastAPI(title="AI Resume Interviewer")
 
 app.add_middleware(
@@ -24,6 +25,9 @@ class InterviewRequest(BaseModel):
     category: str = "Mixed"
     difficulty: str = "Medium"
     num_questions: int = 5
+
+class ChatRequest(BaseModel):
+    question: str
 
 @app.get("/")
 def root():
@@ -96,4 +100,35 @@ def generate_questions(request: InterviewRequest):
         "difficulty": request.difficulty,
         "num_questions": request.num_questions,
         "questions": questions
+    }
+
+class ChatRequest(BaseModel):
+    question: str
+
+
+@app.post("/chat")
+def chat_with_resume(request: ChatRequest):
+    if vector_store is None:
+        return {
+            "error": "Please upload a resume first."
+        }
+
+    results = vector_store.similarity_search(
+        request.question,
+        k=3
+    )
+
+    context = "\n\n".join(
+        result.page_content
+        for result in results
+    )
+
+    answer = answer_resume_question(
+        context=context,
+        question=request.question
+    )
+
+    return {
+        "question": request.question,
+        "answer": answer
     }
