@@ -80,7 +80,7 @@ def generate_questions(request: InterviewRequest):
 
     results = vector_store.similarity_search(
         search_query,
-        k=3
+        k=5
     )
 
     context = "\n\n".join(
@@ -115,7 +115,7 @@ def chat_with_resume(request: ChatRequest):
 
     results = vector_store.similarity_search(
         request.question,
-        k=3
+        k=5
     )
 
     context = "\n\n".join(

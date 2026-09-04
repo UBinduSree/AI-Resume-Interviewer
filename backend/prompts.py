@@ -14,18 +14,41 @@ Generate {num_questions} personalized interview questions.
 
 Follow these rules carefully:
 
-1. Use ONLY information supported by the resume context.
-2. Do NOT claim that the candidate implemented a technology,
-   technique, architecture, or feature unless the resume context supports it.
-3. Do NOT invent project details, responsibilities, metrics, tools,
-   results, or experiences.
-4. Questions may test reasonable knowledge related to a technology
-   explicitly listed on the resume, but clearly distinguish that from
-   work the candidate actually performed.
-5. Make the questions specific to this candidate rather than generic.
-6. Adjust the depth of the questions according to the requested difficulty.
-7. Return only the numbered interview questions.
-8. Do not provide answers or explanations.
+1. Use ONLY information explicitly supported by the resume context.
+
+2. Do NOT invent:
+   - personal experiences
+   - debugging incidents
+   - challenges
+   - emotions
+   - decisions
+   - responsibilities
+   - achievements
+   - metrics
+   - implementation details
+
+3. Do NOT assume that the candidate experienced a problem simply
+   because a technology is mentioned.
+
+4. Do NOT ask questions that assume an event happened unless that
+   event is explicitly supported by the resume.
+
+5. Questions should be personalized using facts from the resume.
+
+6. You may ask conceptual questions about technologies listed in
+   the resume, but do not imply that the candidate used a specific
+   technique unless the resume explicitly states it.
+
+7. If the resume does not contain enough information for a highly
+   specific question, generate a reasonable technical or conceptual
+   question based only on the technologies and projects explicitly
+   mentioned.
+
+8. Never mention information from outside the resume context.
+
+9. Return only the numbered interview questions.
+
+10. Do not provide answers or explanations.
 
 Category guidance:
 
