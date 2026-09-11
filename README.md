@@ -1,125 +1,93 @@
-# AI Resume Interviewer | RAG-Powered Interview Assistant
+# 🤖 AI Resume Interviewer
 
-An AI-powered interview preparation application that analyzes a candidate's resume and generates personalized interview questions using Retrieval-Augmented Generation (RAG).
+An AI-powered resume-based interview preparation application that uses **Retrieval-Augmented Generation (RAG)** to generate personalized interview questions and evaluate candidate answers based on the uploaded resume.
 
-## Features
+The application allows users to upload a PDF resume, generate customized interview questions, practice through an AI mock interview, receive detailed AI feedback, and chat with their resume.
 
-* Resume PDF upload and text extraction
-* Resume text chunking and preprocessing
-* Semantic search using Hugging Face embeddings and FAISS
-* Personalized Technical, Project, HR, and Mixed interview questions
-* Adjustable interview difficulty and question count
-* Google Gemini-powered question generation
-* Resume-grounded conversational Q&A
-* React frontend with FastAPI backend
+---
 
-## Tech Stack
+## 🚀 Features
 
-**Frontend**
+### 📄 Resume Upload & Processing
+- Upload a resume in PDF format.
+- Extract text from the uploaded resume.
+- Split resume content into smaller chunks.
+- Convert resume chunks into vector embeddings.
+- Store and retrieve relevant resume sections using FAISS.
 
-* React
-* Vite
-* CSS
+### 🧠 RAG-Based Question Generation
+- Uses Retrieval-Augmented Generation to ground AI responses in the candidate's resume.
+- Retrieves relevant resume context before generating questions.
+- Supports multiple interview categories:
+  - Technical
+  - Project
+  - HR
+  - Mixed
+- Supports multiple difficulty levels:
+  - Easy
+  - Medium
+  - Hard
+- Allows users to choose the number of questions.
 
-**Backend**
+### 🎤 AI Mock Interview
+- Start an interactive interview using questions generated from the resume.
+- Answer questions one at a time.
+- Submit answers for AI evaluation.
+- Receive:
+  - Score out of 10
+  - Strengths
+  - Areas for improvement
+  - Detailed feedback
+  - Follow-up questions
+- Move through the interview question by question.
+- View an average score after completing the interview.
 
-* Python
-* FastAPI
-* pypdf
+### 💬 Resume Chat
+Users can ask questions about their resume, such as:
 
-**AI / RAG**
+- What projects has the candidate worked on?
+- What programming languages does the candidate know?
+- What is the candidate's educational background?
+- What technologies are mentioned in the resume?
 
-* LangChain
-* Google Gemini
-* Hugging Face Sentence Transformers
-* FAISS
+The application retrieves relevant resume context before generating an answer.
 
-## Architecture
+### 🔐 Context-Aware AI Responses
+The application instructs the language model to use the retrieved resume context and avoid inventing unsupported information.
 
-```text
-Resume PDF
-    ↓
-PDF Text Extraction
-    ↓
-Text Chunking
-    ↓
-Hugging Face Embeddings
-    ↓
-FAISS Vector Store
-    ↓
-Semantic Retrieval
-    ↓
-Relevant Resume Context
-    ↓
-Google Gemini
-    ↓
-Personalized Interview Response
-```
+If the requested information is not available in the retrieved resume context, the AI is instructed to state that the information could not be found.
 
-## How to Run
+### 🔄 Gemini Model Fallback
+The backend supports multiple Gemini models through a fallback mechanism.
 
-### Backend
+If the primary model fails, the application automatically attempts another configured model.
 
-```bash
-cd backend
-python -m venv venv
-```
+---
 
-Activate the virtual environment on Windows:
-
-```bash
-venv\Scripts\activate
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Create a `.env` file in the project root:
-
-```env
-GEMINI_API_KEY=your_api_key_here
-```
-
-Start the backend:
-
-```bash
-uvicorn main:app --reload
-```
-
-Backend runs at:
+## 🏗️ System Architecture
 
 ```text
-http://localhost:8000
-```
-
-### Frontend
-
-Open another terminal:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Frontend runs at:
-
-```text
-http://localhost:5173
-```
-
-## RAG Workflow
-
-The application converts resume content into vector embeddings and stores them in FAISS. When an interview question or resume-related query is submitted, the system retrieves the most relevant resume chunks and provides them as context to Gemini. This helps generate responses grounded in the candidate's actual resume information.
-
-## Future Improvements
-
-* AI-powered answer evaluation
-* Interview simulation mode
-* Skill extraction
-* Interview readiness scoring
-* Persistent vector-store management
-* Deployment to a cloud platform
+                    ┌─────────────────────┐
+                    │      React UI       │
+                    │     Frontend        │
+                    └──────────┬──────────┘
+                               │
+                               │ HTTP / REST API
+                               ▼
+                    ┌─────────────────────┐
+                    │      FastAPI        │
+                    │      Backend        │
+                    └──────────┬──────────┘
+                               │
+                ┌──────────────┼──────────────┐
+                │              │              │
+                ▼              ▼              ▼
+        ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+        │ PDF Text    │ │   FAISS     │ │   Gemini    │
+        │ Extraction  │ │ Vector      │ │    LLM      │
+        │ & Chunking  │ │ Retrieval   │ │ Generation  │
+        └──────┬──────┘ └──────┬──────┘ └──────┬──────┘
+               │               │               │
+               ▼               ▼               ▼
+        Resume Text      Relevant Resume   AI Questions,
+        & Chunks         Context           Answers & Feedback
