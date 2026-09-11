@@ -1,15 +1,23 @@
-from urllib import request
-
 from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
+
 from document_processor import (
     extract_text_from_pdf,
     split_text_into_chunks
 )
+
 from rag_pipeline import create_vector_store
-from llm import generate_interview_questions, answer_resume_question
+
+from llm import (
+    generate_interview_questions,
+    answer_resume_question,
+    evaluate_interview_answer
+)
+
+
 app = FastAPI(title="AI Resume Interviewer")
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,6 +26,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 vector_store = None
 
@@ -28,6 +37,10 @@ class InterviewRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     question: str
+
+class EvaluationRequest(BaseModel):
+    question: str
+    answer: str
 
 @app.get("/")
 def root():
@@ -132,3 +145,38 @@ def chat_with_resume(request: ChatRequest):
         "question": request.question,
         "answer": answer
     }
+
+@app.post("/evaluate-answer")
+def evaluate_answer(request: EvaluationRequest):
+
+    if vector_store is None:
+        return {
+            "error": "Please upload a resume first."
+        }
+
+    results = vector_store.similarity_search(
+        request.question,
+        k=5
+    )
+
+    context = "\n\n".join(
+        result.page_content
+        for result in results
+    )
+
+    evaluation = evaluate_interview_answer(
+        question=request.question,
+        answer=request.answer,
+        context=context
+    )
+
+    return {
+        "question": request.question,
+        "answer": request.answer,
+        "evaluation": evaluation
+    }
+
+    # py -3.14 -m venv venv
+    # source venv/Scripts/activate
+    # uvicorn main:app --reload
+

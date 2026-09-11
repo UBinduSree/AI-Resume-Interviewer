@@ -26,6 +26,25 @@ function App() {
   const [chatQuestion, setChatQuestion] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
 
+  const [interviewQuestions, setInterviewQuestions] = useState([]);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [candidateAnswer, setCandidateAnswer] = useState("");
+  const [evaluation, setEvaluation] = useState("");
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [interviewStarted, setInterviewStarted] = useState(false);
+  const [interviewFinished, setInterviewFinished] = useState(false);
+  const [scores, setScores] = useState([]);
+
+  const parseQuestions = (text) => {
+  return text
+    .split("\n")
+    .map((question) => question.trim())
+    .filter((question) => question.length > 0)
+    .map((question) =>
+      question.replace(/^\d+[.)\s-]+/, "")
+    );
+};
+
   const handleFileSelect = (selectedFile) => {
     if (!selectedFile) return;
 
@@ -66,6 +85,7 @@ function App() {
   const handleDragLeave = () => {
     setIsDragging(false);
   };
+
 
   const handleUpload = async () => {
     if (!file) {
@@ -148,6 +168,17 @@ function App() {
       }
 
       setQuestions(data.questions);
+
+      const parsedQuestions = parseQuestions(data.questions);
+
+      setInterviewQuestions(parsedQuestions);
+      setCurrentQuestion(0);
+      setCandidateAnswer("");
+      setEvaluation("");
+      setScores([]);
+      setInterviewStarted(false);
+      setInterviewFinished(false);
+
       setMessage("Personalized interview questions generated!");
       setMessageType("success");
     } catch (error) {
@@ -264,16 +295,119 @@ function App() {
   };
 
   const getQuestionList = () => {
-    if (!questions) return [];
+  if (!questions) return [];
 
-    return questions
-      .split("\n")
-      .map((question) => question.trim())
-      .filter((question) => question.length > 0)
-      .map((question) => question.replace(/^\d+[.)\s-]+/, ""));
-  };
+  return questions
+    .split("\n")
+    .map((question) => question.trim())
+    .filter((question) => question.length > 0)
+    .map((question) =>
+      question.replace(/^\d+[.)\s-]+/, "")
+    );
+};
 
   const questionList = getQuestionList();
+
+  const startInterview = () => {
+  if (interviewQuestions.length === 0) {
+    setMessage("Please generate interview questions first.");
+    return;
+  }
+
+  setInterviewStarted(true);
+  setInterviewFinished(false);
+  setCurrentQuestion(0);
+  setCandidateAnswer("");
+  setEvaluation("");
+  setScores([]);
+  setMessage("Interview started!");
+  };
+
+const handleSubmitAnswer = async () => {
+  if (!candidateAnswer.trim()) {
+    setMessage("Please enter your answer.");
+    setMessageType("error");
+    return;
+  }
+
+  try {
+    setIsEvaluating(true);
+    setEvaluation("");
+    setMessage("AI is evaluating your answer...");
+    setMessageType("loading");
+
+    const question = interviewQuestions[currentQuestion];
+
+    const response = await fetch(
+      "http://localhost:8000/evaluate-answer",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          question: question,
+          answer: candidateAnswer,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    console.log("Evaluation response:", data);
+
+    if (!response.ok || data.error) {
+      setMessage(
+        data.error || "Failed to evaluate answer."
+      );
+      setMessageType("error");
+      return;
+    }
+
+    // Store the AI feedback
+    const feedback = data.evaluation || data.feedback || "";
+
+    setEvaluation(feedback);
+
+    // Extract score such as SCORE: 8/10
+    const scoreMatch = feedback.match(
+      /SCORE:\s*(\d+)\/10/i
+    );
+
+    if (scoreMatch) {
+      setScores((previousScores) => [
+        ...previousScores,
+        Number(scoreMatch[1]),
+      ]);
+    }
+
+    setMessage("Answer evaluated successfully!");
+    setMessageType("success");
+
+  } catch (error) {
+    console.error("Evaluation error:", error);
+    setMessage("Could not connect to the backend.");
+    setMessageType("error");
+  } finally {
+    setIsEvaluating(false);
+  }
+};
+
+  const handleNextQuestion = () => {
+  if (currentQuestion < interviewQuestions.length - 1) {
+    setCurrentQuestion((previous) => previous + 1);
+    setCandidateAnswer("");
+    setEvaluation("");
+    setMessage("");
+  } else {
+    setInterviewFinished(true);
+    setInterviewStarted(false);
+    setMessage("Interview completed!");
+  }
+};
+
+
+
 
   return (
     <div className="app">
@@ -659,6 +793,205 @@ function App() {
 
           </section>
         )}
+
+        {/* INTERVIEW SECTION */}
+
+          {interviewQuestions.length > 0 && (
+    <div className="card interview-card">
+
+      {!interviewStarted && !interviewFinished && (
+        <div className="interview-start">
+
+          <div className="interview-icon">
+            🎤
+          </div>
+
+          <h2>AI Mock Interview</h2>
+
+          <p>
+            Test yourself with personalized questions
+            generated from your resume.
+          </p>
+
+          <div className="interview-info">
+
+            <div>
+              <strong>{interviewQuestions.length}</strong>
+              <span>Questions</span>
+            </div>
+
+            <div>
+              <strong>{difficulty}</strong>
+              <span>Difficulty</span>
+            </div>
+
+            <div>
+              <strong>{category}</strong>
+              <span>Type</span>
+            </div>
+
+          </div>
+
+          <button
+            className="start-interview-btn"
+            onClick={startInterview}
+          >
+            🎤 Start Interview
+          </button>
+
+        </div>
+      )}
+
+   {interviewStarted && (
+  <div className="active-interview">
+
+    <div className="interview-header">
+
+      <div>
+        <span className="interview-label">
+          AI INTERVIEWER
+        </span>
+
+        <h2>
+          Question {currentQuestion + 1}
+          {" "}
+          <span>
+            / {interviewQuestions.length}
+          </span>
+        </h2>
+      </div>
+
+      <div className="progress-text">
+        {Math.round(
+          ((currentQuestion + 1) /
+            interviewQuestions.length) *
+            100
+        )}
+        %
+      </div>
+
+    </div>
+
+    <div className="progress-bar">
+      <div
+        className="progress-fill"
+        style={{
+          width: `${
+            ((currentQuestion + 1) /
+              interviewQuestions.length) *
+            100
+          }%`,
+        }}
+      />
+    </div>
+
+    <div className="question-box">
+
+      <span>QUESTION</span>
+
+      <h3>
+        {interviewQuestions[currentQuestion]}
+      </h3>
+
+    </div>
+
+    <div className="answer-section">
+
+      <label>Your Answer</label>
+
+      <textarea
+        value={candidateAnswer}
+        onChange={(event) =>
+          setCandidateAnswer(event.target.value)
+        }
+        placeholder="Type your answer here..."
+        rows={7}
+        disabled={isEvaluating}
+      />
+
+      <button
+        className="submit-answer-btn"
+        onClick={handleSubmitAnswer}
+        disabled={isEvaluating}
+      >
+        {isEvaluating
+          ? "🤖 Evaluating..."
+          : "Submit Answer →"}
+      </button>
+
+    </div>
+
+    {evaluation && (
+      <div className="evaluation-box">
+
+        <div className="evaluation-header">
+          <h3>🤖 AI Feedback</h3>
+        </div>
+
+        <div className="evaluation-content">
+          {evaluation}
+        </div>
+
+        <button
+          className="next-question-btn"
+          onClick={handleNextQuestion}
+        >
+          {currentQuestion < interviewQuestions.length - 1
+            ? "Next Question →"
+            : "Finish Interview ✓"}
+        </button>
+
+      </div>
+    )}
+
+  </div>
+)}
+
+{interviewFinished && (
+  <div className="interview-complete">
+
+    <div className="complete-icon">
+      🎉
+    </div>
+
+    <h2>Interview Complete!</h2>
+
+    <p>
+      Great job! You completed all{" "}
+      {interviewQuestions.length} questions.
+    </p>
+
+    {scores.length > 0 && (
+      <div className="final-score">
+
+        <span>Average Score</span>
+
+        <strong>
+          {(
+            scores.reduce(
+              (sum, score) => sum + score,
+              0
+            ) / scores.length
+          ).toFixed(1)}
+          /10
+        </strong>
+
+      </div>
+    )}
+
+    <button
+      className="start-interview-btn"
+      onClick={startInterview}
+    >
+      🔄 Try Again
+    </button>
+
+  </div>
+)}
+
+  </div>
+  
+)}
 
         {/* CHAT */}
 

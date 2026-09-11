@@ -92,3 +92,55 @@ Rules:
 """
 
     return generate_with_fallback(prompt)
+
+def evaluate_interview_answer(
+    question: str,
+    answer: str,
+    context: str
+):
+    prompt = f"""
+You are an AI technical interviewer evaluating a candidate's answer.
+
+The candidate's resume context is provided below.
+
+Resume context:
+{context}
+
+Interview question:
+{question}
+
+Candidate's answer:
+{answer}
+
+Evaluate the answer using ONLY information supported by the resume
+context and the candidate's response.
+
+Return your evaluation in exactly this format:
+
+SCORE: X/10
+
+STRENGTHS:
+- strength 1
+- strength 2
+
+IMPROVEMENTS:
+- improvement 1
+- improvement 2
+
+FEEDBACK:
+A short professional explanation of how the candidate could improve
+the answer.
+
+FOLLOW_UP:
+One relevant follow-up interview question.
+
+Rules:
+1. Do not invent resume information.
+2. Do not give credit for technologies or experience that the candidate
+   did not demonstrate.
+3. Be fair and constructive.
+4. Consider technical accuracy, clarity, relevance, and completeness.
+5. Keep the evaluation concise.
+"""
+
+    return generate_with_fallback(prompt)   
